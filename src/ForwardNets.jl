@@ -1,3 +1,5 @@
+VERSION >= v"0.4.0-dev+6521" && __precompile__(true)
+
 module ForwardNets
 
 using LightGraphs
@@ -6,6 +8,7 @@ export
     ForwardNet,
     Node,
     Layer,
+    Variable,
     Activation,
     Affine,
     LSTM,
@@ -24,6 +27,7 @@ export
     forward!,
     add_node!,
     restore!,
+    indexof,
     get_name,
     get_output,
 
@@ -82,11 +86,9 @@ add_node!(net::ForwardNet, node::Node, parent::Int) = add_node!(net, node, Int[p
 abstract Layer <: Node
 abstract Activation <: Node
 
-if !isdefined(:Variable)
-    type Variable{n} <: Node
-        name::Symbol
-        tensor::Array{Float32, n}
-    end
+type Variable{n} <: Node
+    name::Symbol
+    tensor::Array{Float32, n}
 end
 get_name(a::Variable) = a.name
 get_output(a::Variable) = a.tensor
