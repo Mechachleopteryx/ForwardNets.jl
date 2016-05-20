@@ -28,12 +28,15 @@ export
     add_node!,
     restore!,
     indexof,
+    lastindex,
     get_name,
     get_output,
 
     sigmoid,
     sigmoid!,
     tanh!,
+
+    zero!,
 
     calc_forwardpass,
     print_forward_pass
@@ -62,6 +65,7 @@ end
 Base.getindex(net::ForwardNet, index::Int) = net.nodes[index]
 Base.getindex(net::ForwardNet, name::Symbol) = net.nodes[net.name_to_index[name]]
 indexof(net::ForwardNet, name::Symbol) = net.name_to_index[name]
+lastindex(net::ForwardNet) = nv(net.dag)
 function add_node!(net::ForwardNet, node::Node, parents::Vector{Int}=Int[])
     add_vertex!(net.dag)
     push!(net.nodes, node)
@@ -182,6 +186,7 @@ type LSTM <: Layer
 end
 get_name(a::LSTM) = a.name
 get_output(a::LSTM) = a.m
+zero!(a::LSTM) = fill!(a.state, 0.0f0)
 function add_node!(net::ForwardNet, ::Type{LSTM},
     name::Symbol,
     parent_index::Int,
