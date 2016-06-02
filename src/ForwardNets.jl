@@ -391,7 +391,56 @@ function restore!(a::Conv2d, filename_W::AbstractString, filename_b::AbstractStr
     a
 end
 
-type BatchNorm <: Layer
+type BatchNorm1 <: Layer
+    # https://arxiv.org/pdf/1502.03167.pdf
+    name::Symbol
+    γ::Float32
+    β::Float32
+    ϵ::Float32
+    μ::Float32 # train set mean
+    ν::Float32 # train set variance
+
+    parent::Vector{Float32}
+    child::Vector{Float32}
+end
+get_name(a::BatchNorm1) = a.name
+get_output(a::BatchNorm1) = a.child
+function forward!(a::BatchNorm1)
+    x = (a.parent - a.μ) / sqrt(a.ν + a.ϵ)
+    a.child = a.γ * x + a.β
+    a
+end
+function add_node!(net::ForwardNet, ::Type{BatchNorm1},
+    name::Symbol,
+    parent_index::Int,
+    ϵ::Float32=Float32(1e-5)
+    )
+
+    parent_node = net[parent_index]
+
+    parent = get_output(parent_node)::Vector{Float32}
+    child = Array(Float32, length(parent))
+    γ = Float32
+    β = Float32
+    μ = Float32
+    ν = Float32
+
+    node = BatchNorm1(name, γ, β, ϵ, μ, ν, parent, child)
+    add_node!(net, node, parent_index)
+end
+function restore!(a::BatchNorm1, filename_gamma::AbstractString, filename_beta::AbstractString,
+    filename_mean::AbstractString,
+    filename_variance::AbstractString)
+
+    copy!(a.γ, open(read_binary_vec, filename_gamma))
+    copy!(a.β, open(read_binary_vec, filename_beta))
+    copy!(a.μ, open(read_binary_vec, filename_mean))
+    copy!(a.ν, open(read_binary_vec, filename_variance))
+
+    a
+end
+
+type BatchNorm3 <: Layer
     # https://arxiv.org/pdf/1502.03167.pdf
     name::Symbol
     γ::Vector{Float32}
@@ -403,16 +452,16 @@ type BatchNorm <: Layer
     parent::Array{Float32, 3}
     child::Array{Float32, 3}
 end
-get_name(a::BatchNorm) = a.name
-get_output(a::BatchNorm) = a.child
-function forward!(a::BatchNorm)
+get_name(a::BatchNorm3) = a.name
+get_output(a::BatchNorm3) = a.child
+function forward!(a::BatchNorm3)
     for i in 1 : size(a.child)[3]
         x = (a.parent[:, :, i] - a.μ[i]) / sqrt(a.ν[i] + a.ϵ)
         a.child[:, :, i] = a.γ[i] * x + a.β[i]
     end
     a
 end
-function add_node!(net::ForwardNet, ::Type{BatchNorm},
+function add_node!(net::ForwardNet, ::Type{BatchNorm3},
     name::Symbol,
     parent_index::Int,
     ϵ::Float32=Float32(1e-5)
@@ -431,7 +480,7 @@ function add_node!(net::ForwardNet, ::Type{BatchNorm},
     node = BatchNorm(name, γ, β, ϵ, μ, ν, parent, child)
     add_node!(net, node, parent_index)
 end
-function restore!(a::BatchNorm, filename_gamma::AbstractString, filename_beta::AbstractString,
+function restore!(a::BatchNorm3, filename_gamma::AbstractString, filename_beta::AbstractString,
     filename_mean::AbstractString,
     filename_variance::AbstractString)
 
