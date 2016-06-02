@@ -395,11 +395,11 @@ end
 type BatchNorm1 <: Layer
     # https://arxiv.org/pdf/1502.03167.pdf
     name::Symbol
-    γ::Float32
-    β::Float32
+    γ::Vector{Float32}
+    β::Vector{Float32}
     ϵ::Float32
-    μ::Float32 # train set mean
-    ν::Float32 # train set variance
+    μ::Vector{Float32} # train set mean
+    ν::Vector{Float32} # train set variance
 
     parent::Vector{Float32}
     child::Vector{Float32}
@@ -407,7 +407,7 @@ end
 get_name(a::BatchNorm1) = a.name
 get_output(a::BatchNorm1) = a.child
 function forward!(a::BatchNorm1)
-    x = (a.parent - a.μ) / sqrt(a.ν + a.ϵ)
+    x = (a.parent - a.μ) ./ sqrt(a.ν + a.ϵ)
     a.child = a.γ * x + a.β
     a
 end
@@ -421,10 +421,10 @@ function add_node!(net::ForwardNet, ::Type{BatchNorm1},
 
     parent = get_output(parent_node)::Vector{Float32}
     child = Array(Float32, length(parent))
-    γ = 0f0
-    β = 0f0
-    μ = 0f0
-    ν = 0f0
+    γ = Array(Float32, length(parent))
+    β = Array(Float32, length(parent))
+    μ = Array(Float32, length(parent))
+    ν = Array(Float32, length(parent))
 
     node = BatchNorm1(name, γ, β, ϵ, μ, ν, parent, child)
     add_node!(net, node, parent_index)
@@ -478,7 +478,7 @@ function add_node!(net::ForwardNet, ::Type{BatchNorm3},
     μ = Array(Float32, in_c)
     ν = Array(Float32, in_c)
 
-    node = BatchNorm(name, γ, β, ϵ, μ, ν, parent, child)
+    node = BatchNorm3(name, γ, β, ϵ, μ, ν, parent, child)
     add_node!(net, node, parent_index)
 end
 function restore!(a::BatchNorm3, filename_gamma::AbstractString, filename_beta::AbstractString,
