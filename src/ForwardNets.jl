@@ -421,10 +421,10 @@ function add_node!(net::ForwardNet, ::Type{BatchNorm1},
 
     parent = get_output(parent_node)::Vector{Float32}
     child = Array(Float32, length(parent))
-    γ = Float32
-    β = Float32
-    μ = Float32
-    ν = Float32
+    γ = 0f0
+    β = 0f0
+    μ = 0f0
+    ν = 0f0
 
     node = BatchNorm1(name, γ, β, ϵ, μ, ν, parent, child)
     add_node!(net, node, parent_index)
