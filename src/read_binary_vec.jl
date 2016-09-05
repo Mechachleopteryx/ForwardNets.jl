@@ -6,7 +6,7 @@ function read_binary_vec(io::IO)
     vec
 end
 
-function infer_shape(vec::Vector{Float32}, shape::Tuple{Vararg{Int}})
+function infer_shape{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Vararg{Int}})
 
     #=
     Setting a dimension to -1 will have us infer the other one
@@ -35,15 +35,15 @@ function infer_shape(vec::Vector{Float32}, shape::Tuple{Vararg{Int}})
     shape
 end
 
-function convert_to_column_major_array(vec::Vector{Float32}, shape::Tuple{Int})
+function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Int})
     @assert(shape[1] == length(vec))
     deepcopy(vec)
 end
-function convert_to_column_major_array(vec::Vector{Float32}, shape::Tuple{Int, Int})
+function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Int, Int})
     n, m = shape
     @assert(n*m == length(vec))
 
-    retval = Array(Float32, n, m)
+    retval = Array(F, n, m)
 
     count = 0
     for i in 1 : n
@@ -55,11 +55,11 @@ function convert_to_column_major_array(vec::Vector{Float32}, shape::Tuple{Int, I
 
     retval
 end
-function convert_to_column_major_array(vec::Vector{Float32}, shape::Tuple{Int, Int, Int})
+function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Int, Int, Int})
     m, n, o = shape
     @assert(n*m*o == length(vec))
 
-    retval = Array(Float32, m, n, o)
+    retval = Array(F, m, n, o)
 
     count = 0
     for i in 1 : m
@@ -73,11 +73,11 @@ function convert_to_column_major_array(vec::Vector{Float32}, shape::Tuple{Int, I
 
     retval
 end
-function convert_to_column_major_array(vec::Vector{Float32}, shape::Tuple{Int, Int, Int, Int})
+function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Int, Int, Int, Int})
     m, n, o, p = shape
     @assert(n*m*o*p == length(vec))
 
-    retval = Array(Float32, m, n, o, p)
+    retval = Array(F, m, n, o, p)
 
     count = 0
     for i in 1 : m

@@ -18,6 +18,7 @@ export
     Concatenator,
     Reshaper,
     ReLU,
+    TanH,
     SoftPlus,
     ForwardPass,
 
@@ -408,7 +409,7 @@ get_name(a::BatchNorm1) = a.name
 get_output(a::BatchNorm1) = a.child
 function forward!(a::BatchNorm1)
     x = (a.parent - a.μ) ./ sqrt(a.ν + a.ϵ)
-    a.child = a.γ * x + a.β
+    a.child[:] = (a.γ .* x) .+ a.β
     a
 end
 function add_node!(net::ForwardNet, ::Type{BatchNorm1},
@@ -569,6 +570,17 @@ function add_node!(net::ForwardNet, ::Type{Reshaper},
     add_node!(net, node, parent_index)
 end
 
+
+type TanH <: Activation
+    member::Array{Float32}
+end
+get_output(a::TanH) = a.member
+function forward!(a::TanH)
+    for i in 1 : length(a.member)
+        a.member[i] = tanh(a.member[i])
+    end
+    a
+end
 
 type ReLU <: Activation
     member::Array{Float32}
