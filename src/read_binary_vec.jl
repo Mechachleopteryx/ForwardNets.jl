@@ -1,12 +1,12 @@
-function read_binary_vec(io::IO)
-    vec = Float32[]
+function read_binary_vec{T<:Real}(io::IO, ::Type{T})
+    vec = T[]
     while !eof(io)
-        push!(vec, read(io, Float32))
+        push!(vec, read(io, T))
     end
     vec
 end
 
-function infer_shape{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Vararg{Int}})
+function infer_shape{T}(vec::Vector{T}, shape::Tuple{Vararg{Int}})
 
     #=
     Setting a dimension to -1 will have us infer the other one
@@ -35,15 +35,11 @@ function infer_shape{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Vararg{Int}}
     shape
 end
 
-function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Int})
-    @assert(shape[1] == length(vec))
-    deepcopy(vec)
+function _convert_to_column_major_array!{T}(retval::Array{T, 1}, vec::Vector{T}, shape::Tuple{Int})
+    copy!(retval, vec)
 end
-function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Int, Int})
+function _convert_to_column_major_array!{T}(retval::Array{T, 2}, vec::Vector{T}, shape::Tuple{Int, Int})
     n, m = shape
-    @assert(n*m == length(vec))
-
-    retval = Array(F, n, m)
 
     count = 0
     for i in 1 : n
@@ -55,11 +51,8 @@ function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::
 
     retval
 end
-function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Int, Int, Int})
+function _convert_to_column_major_array!{T}(retval::Array{T, 3}, vec::Vector{T}, shape::Tuple{Int, Int, Int})
     m, n, o = shape
-    @assert(n*m*o == length(vec))
-
-    retval = Array(F, m, n, o)
 
     count = 0
     for i in 1 : m
@@ -73,11 +66,8 @@ function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::
 
     retval
 end
-function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::Tuple{Int, Int, Int, Int})
+function _convert_to_column_major_array!{T}(retval::Array{T, 4}, vec::Vector{T}, shape::Tuple{Int, Int, Int, Int})
     m, n, o, p = shape
-    @assert(n*m*o*p == length(vec))
-
-    retval = Array(F, m, n, o, p)
 
     count = 0
     for i in 1 : m
@@ -92,4 +82,59 @@ function convert_to_column_major_array{F<:AbstractFloat}(vec::Vector{F}, shape::
     end
 
     retval
+end
+
+function convert_to_column_major_array!{T}(retval::Array{T, 1}, vec::Vector{T}, shape::Tuple{Int})
+    @assert(shape[1] == length(vec))
+    _convert_to_column_major_array(retval, vec, shape)
+end
+function convert_to_column_major_array!{T}(retval::Array{T, 2}, vec::Vector{T}, shape::Tuple{Int, Int})
+    n, m = shape
+    @assert(n*m == length(vec))
+    @assert(size(retval) == shape)
+
+    _convert_to_column_major_array(retval, vec, shape)
+end
+function convert_to_column_major_array!{T}(retval::Array{T, 3}, vec::Vector{T}, shape::Tuple{Int, Int, Int})
+    m, n, o = shape
+    @assert(n*m*o == length(vec))
+    @assert(size(retval) == shape)
+
+    _convert_to_column_major_array(retval, vec, shape)
+end
+function convert_to_column_major_array!{T}(retval::Array{T, 4}, vec::Vector{T}, shape::Tuple{Int, Int, Int, Int})
+    m, n, o, p = shape
+    @assert(n*m*o*p == length(vec))
+    @assert(size(retval) == shape)
+
+    _convert_to_column_major_array(retval, vec, shape)
+end
+
+function convert_to_column_major_array{T}(vec::Vector{T}, shape::Tuple{Int})
+    @assert(shape[1] == length(vec))
+    deepcopy(vec)
+end
+function convert_to_column_major_array{T}(vec::Vector{T}, shape::Tuple{Int, Int})
+    n, m = shape
+    @assert(n*m == length(vec))
+
+    retval = Array(T, n, m)
+
+    _convert_to_column_major_array(retval, vec, shape)
+end
+function convert_to_column_major_array{T}(vec::Vector{T}, shape::Tuple{Int, Int, Int})
+    m, n, o = shape
+    @assert(n*m*o == length(vec))
+
+    retval = Array(T, m, n, o)
+
+    _convert_to_column_major_array(retval, vec, shape)
+end
+function convert_to_column_major_array{T}(vec::Vector{T}, shape::Tuple{Int, Int, Int, Int})
+    m, n, o, p = shape
+    @assert(n*m*o*p == length(vec))
+
+    retval = Array(T, m, n, o, p)
+
+    _convert_to_column_major_array(retval, vec, shape)
 end
