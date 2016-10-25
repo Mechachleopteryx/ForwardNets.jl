@@ -91,8 +91,114 @@ function restore!{T}(a::LSTM{T}, filename_W::String, filename_b::String)
     a
 end
 
+#=
+u = f(W_xu * x + W_hu*h_{t-1} + b_u)
+r = f(W_xr * x + W_hr*h_{t-1} + b_r)
+c = tanh(W_xc * x + (W_hc*h_{t-1}) .* r + b_c)
+h_t = (1-u) .* c + u .* h_{t-1}
+=#
+type GRU{T} <: Layer{T}
+    name::Symbol
+    W_x::Matrix{T} # 3H×D
+    W_h::Matrix{T} # 3H×H
+    b::Vector{T} # 3H
+
+    input::Vector{T} # input, [D]
+
+    # preallocated memory
+    xb_ruc::Vector{T}  # [3H]
+    xb_r::Vector{T} # [H]
+    xb_u::Vector{T} # [H]
+    xb_c::Vector{T} # [H]
+
+    h_ruc::Vector{T} # [3H]
+    h_r::Vector{T} # [H]
+    h_u::Vector{T} # [H]
+    h_c::Vector{T} # [H]
+
+    r::Vector{T} # [H] input gate
+    u::Vector{T} # [H] new input
+    c::Vector{T} # [H] forget gate
+    h::Vector{T} # [H] GRU state
+    h_prev::Vector{T} # [H] previous state
+end
+name(a::GRU) = a.name
+output{T}(a::GRU{T}) = a.h
+zero!{T}(a::GRU{T}) = fill!(a.h_prev, zero(T))
+function Base.push!{T}(net::ForwardNet{T}, ::Type{GRU},
+    name::Symbol,
+    parent_index::NameOrIndex,
+    H::Int; # hidden layer size
+    )
+
+    input = output(net[parent_index])::Vector{T}
+    D = length(input)
+
+    W_x = Array(T, 3H, D)
+    W_h = Array(T, 3H, H)
+    b = Array(T, 3H)
+
+    xb_ruc = Array(T, 3H)
+    xb_r = Array(T, H)
+    xb_u = Array(T, H)
+    xb_c = Array(T, H)
+
+    h_ruc = Array(T, 3H)
+    h_r = Array(T, H)
+    h_u = Array(T, H)
+    h_c = Array(T, H)
+
+    r = Array(T, H)
+    u = Array(T, H)
+    c = Array(T, H)
+    h = Array(T, H)
+    h_prev = Array(T, H)
+
+    node = GRU(name, W_x, W_h, b, input, xb_ruc, xb_r, xb_u, xb_c, h_ruc, h_r, h_u, h_c, r, u, c, h, h_prev)
+    push!(net, node, parent_index)
+end
+function forward!{T}(a::GRU{T})
+
+    H = length(a.h_prev)
+    D = length(a.input)
+
+    copy!(a.xb_ruc, a.b) # y ← b
+    Base.LinAlg.BLAS.gemv!('N', one(T), a.W_x, a.input, one(T), a.xb_ruc) # y ← W*x + y
+
+    copy!(a.h_ruc, Base.LinAlg.BLAS.gemv('N', one(T), a.W_h, a.h_prev)) # y ← W*x
+
+    copy!(a.xb_r, 1, a.xb_ruc, 1, H)
+    copy!(a.xb_u, 1, a.xb_ruc,  H+1, H)
+    copy!(a.xb_c, 1, a.xb_ruc, 2H+1, H)
+
+    copy!(a.h_r, 1, a.h_ruc, 1, H)
+    copy!(a.h_u, 1, a.h_ruc,  H+1, H)
+    copy!(a.h_c, 1, a.h_ruc, 2H+1, H)
+
+    # compute u, r, c, and h
+    for k in 1 : H
+        a.r[k] = sigmoid(a.xb_r[k] + a.h_r[k])
+        a.u[k] = sigmoid(a.xb_u[k] + a.h_u[k]) 
+        a.c[k] = tanh(a.xb_c[k] + a.r[k]*a.h_c[k]) 
+        h_old = a.h[k]
+        a.h[k] = (1 - a.u[k])*a.c[k] + a.u[k]*a.h_prev[k]
+        a.h_prev[k] = h_old
+    end
+
+    a
+end
+function restore!{T}(a::GRU{T}, filename_Wx::String, filename_Wh::String, filename_b::String)
+    H = length(a.h_prev)
+    D = length(a.input)
+
+    vec = open(io->read_binary_vec(io, T), filename_Wx)
+    a.W_x[:] = convert_to_column_major_array(vec, (D,3H))'
+
+    vec = open(io->read_binary_vec(io, T), filename_Wh)
+    a.W_h[:] = convert_to_column_major_array(vec, (H,3H))'
 
 
-# type GRU <: Layer
+    copy!(a.b, open(read_binary_vec, filename_b))
 
-# end
+    a
+end

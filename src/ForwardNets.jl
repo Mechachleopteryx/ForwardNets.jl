@@ -19,6 +19,7 @@ export
     Concatenator,
     Reshaper,
     ReLU,
+    ELU,
     TanH,
     SoftPlus,
 
@@ -39,6 +40,7 @@ export
 
     sigmoid,
     relu,
+    elu,
     softplus,
 
     zero!,  # to zero out the hidden state of an LSTM

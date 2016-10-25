@@ -1,6 +1,7 @@
 sigmoid(x::Real) = 1 / (1 + exp(-x))
 relu(x::Real) = max(x, 0.0)
 softplus(x::Real) = log(1 + exp(x))
+elu(x::Real) = max(x, 0.0) + (exp(x) - 1)*(x <= 0)
 
 function Base.push!{T, A<:Activation}(net::ForwardNet{T}, ::Type{A},
     name::Symbol,
@@ -36,6 +37,18 @@ name(a::ReLU) = a.name
 output(a::ReLU) = a.output
 function forward!{T}(a::ReLU{T})
     a.output .= max.(a.input, zero(T))
+    a
+end
+
+type ELU{T} <: Activation{T}
+    name::Symbol
+    input::Array{T}
+    output::Array{T}
+end
+name(a::ELU) = a.name
+output(a::ELU) = a.output
+function forward!{T}(a::ELU{T})
+    a.output .= elu.(a.input)
     a
 end
 
