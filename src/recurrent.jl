@@ -95,7 +95,7 @@ end
 u = f(W_xu * x + W_hu*h_{t-1} + b_u)
 r = f(W_xr * x + W_hr*h_{t-1} + b_r)
 c = tanh(W_xc * x + (W_hc*h_{t-1}) .* r + b_c)
-h_t = (1-u) .* c + u .* h_{t-1}
+h_t = (1-u) .* h_{t-1} + u .* c
 =#
 type GRU{T} <: Layer{T}
     name::Symbol
@@ -167,11 +167,11 @@ function forward!{T}(a::GRU{T})
 
     copy!(a.h_ruc, Base.LinAlg.BLAS.gemv('N', one(T), a.W_h, a.h_prev)) # y ← W*x
 
-    copy!(a.xb_r, 1, a.xb_ruc, 1, H)
+    copy!(a.xb_r, 1, a.xb_ruc,    1, H)
     copy!(a.xb_u, 1, a.xb_ruc,  H+1, H)
     copy!(a.xb_c, 1, a.xb_ruc, 2H+1, H)
 
-    copy!(a.h_r, 1, a.h_ruc, 1, H)
+    copy!(a.h_r, 1, a.h_ruc,    1, H)
     copy!(a.h_u, 1, a.h_ruc,  H+1, H)
     copy!(a.h_c, 1, a.h_ruc, 2H+1, H)
 
@@ -181,7 +181,7 @@ function forward!{T}(a::GRU{T})
         a.u[k] = sigmoid(a.xb_u[k] + a.h_u[k]) 
         a.c[k] = tanh(a.xb_c[k] + a.r[k]*a.h_c[k]) 
         h_old = a.h[k]
-        a.h[k] = (1 - a.u[k])*a.c[k] + a.u[k]*a.h_prev[k]
+        a.h[k] = (1 - a.u[k])*a.h_prev[k] + a.u[k]*a.c[k]
         a.h_prev[k] = h_old
     end
 
