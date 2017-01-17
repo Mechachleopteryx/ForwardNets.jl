@@ -1,7 +1,7 @@
 sigmoid(x::Real) = 1 / (1 + exp(-x))
 relu(x::Real) = max(x, 0.0)
 softplus(x::Real) = log(1 + exp(x))
-elu(x::Real) = max(x, 0.0) + (exp(x) - 1)*(x <= 0)
+elu(x::Real) = max(x, 0.0) + (exp(x) - 1)*(x <= 0.0)
 
 function Base.push!{T, A<:Activation}(net::ForwardNet{T}, ::Type{A},
     name::Symbol,

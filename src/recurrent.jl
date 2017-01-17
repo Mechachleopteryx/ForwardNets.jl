@@ -157,6 +157,7 @@ function Base.push!{T}(net::ForwardNet{T}, ::Type{GRU},
     node = GRU(name, W_x, W_h, b, input, xb_ruc, xb_r, xb_u, xb_c, h_ruc, h_r, h_u, h_c, r, u, c, h, h_prev)
     push!(net, node, parent_index)
 end
+
 function forward!{T}(a::GRU{T})
 
     H = length(a.h_prev)
